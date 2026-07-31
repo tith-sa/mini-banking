@@ -29,3 +29,5 @@ data class Account(
     val owner: User,
 
 ) : BaseModel()
+
+// get user but don't want account

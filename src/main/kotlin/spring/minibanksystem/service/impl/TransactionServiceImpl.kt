@@ -142,7 +142,7 @@ class TransactionServiceImpl(
     override fun historyTransaction(accountNumber: String, page: Int, size: Int): ResponseDto<Page<TransactionResponse>>{
         accountRepo.findByAccountNumber(accountNumber)
             ?: throw IllegalStateException("Account not found")
-        val pageable: Pageable = PageRequest.of(
+        val pageable = PageRequest.of(
             page,
             size,
             Sort.by(Sort.Direction.DESC, "createdAt")

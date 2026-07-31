@@ -16,7 +16,7 @@ data class User(
     @Column(unique = true,nullable = false)
     var email: String,
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 500)
     var password: String,
 
     @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY)
