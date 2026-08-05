@@ -9,6 +9,7 @@ import spring.minibanksystem.model.Account
 import spring.minibanksystem.repository.AccountRepository
 import spring.minibanksystem.repository.UserRepository
 import spring.minibanksystem.service.AccountService
+import spring.minibanksystem.service.AccountAuthorizationService
 import spring.minibanksystem.util.generatedAccountNumber
 import spring.minibanksystem.util.toSuccess
 
@@ -16,6 +17,7 @@ import spring.minibanksystem.util.toSuccess
 class AccountServiceImpl(
     private val accountRepo: AccountRepository,
     private val userRepo: UserRepository,
+    private val accountAuthorizationService: AccountAuthorizationService
 ) : AccountService {
 
     override fun createAccount(userId: Long,request: AccountRequest): ResponseDto<AccountResponse> {
@@ -71,14 +73,12 @@ class AccountServiceImpl(
             .orElseThrow{
                 IllegalArgumentException("Account Not Found")
             }
-        if (account.owner.id != ownerId) {
-            throw IllegalArgumentException("Not Your Account")
-        }
+        accountAuthorizationService.validateOwner(account, ownerId)
         return AccountResponse(
             account.id,
             account.accountNumber,
             account.currency,
-            account.balance
+            account.balance,
         ).toSuccess(
             message = "Getting account"
         )

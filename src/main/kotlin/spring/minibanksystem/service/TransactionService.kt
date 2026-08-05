@@ -6,6 +6,7 @@ import spring.minibanksystem.dto.request.TransactionRequest
 import spring.minibanksystem.dto.response.TransactionResponse
 
 interface TransactionService {
-    fun transfer(request: TransactionRequest) : ResponseDto<TransactionResponse>
-    fun historyTransaction(accountNumber: String,page: Int, size: Int) : ResponseDto<Page<TransactionResponse>>
+    fun transfer(userId: Long,request: TransactionRequest) : ResponseDto<TransactionResponse>
+    fun historyTransaction(userId: Long,accountNumber: String,page: Int, size: Int) : ResponseDto<Page<TransactionResponse>>
+    fun getTransaction(userId: Long,id: Long) : ResponseDto<TransactionResponse>
 }

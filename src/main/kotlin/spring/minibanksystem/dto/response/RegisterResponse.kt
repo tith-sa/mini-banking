@@ -1,7 +1,7 @@
 package spring.minibanksystem.dto.response
 
 
-data class AuthResponse(
+data class RegisterResponse(
     val id : Long,
     val username: String,
     val email: String,

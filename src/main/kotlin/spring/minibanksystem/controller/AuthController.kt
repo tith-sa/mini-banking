@@ -7,8 +7,10 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import spring.minibanksystem.dto.ResponseDto
-import spring.minibanksystem.dto.request.AuthRequest
-import spring.minibanksystem.dto.response.AuthResponse
+import spring.minibanksystem.dto.request.LoginRequest
+import spring.minibanksystem.dto.request.RegisterRequest
+import spring.minibanksystem.dto.response.LoginResponse
+import spring.minibanksystem.dto.response.RegisterResponse
 import spring.minibanksystem.service.AuthService
 
 @RestController
@@ -18,8 +20,14 @@ class AuthController(
 ) {
 
     @PostMapping("/register")
-    fun register(@Valid @RequestBody request : AuthRequest): ResponseEntity<ResponseDto<AuthResponse>> {
+    fun register(@Valid @RequestBody request : RegisterRequest): ResponseEntity<ResponseDto<RegisterResponse>> {
         val response = authService.register(request)
+        return ResponseEntity.ok(response)
+    }
+
+    @PostMapping("/login")
+    fun login(@Valid @RequestBody request: LoginRequest): ResponseEntity<ResponseDto<LoginResponse>> {
+        val response = authService.login(request)
         return ResponseEntity.ok(response)
     }
 }

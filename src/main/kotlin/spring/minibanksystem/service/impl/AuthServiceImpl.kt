@@ -3,10 +3,13 @@ import jakarta.transaction.Transactional
 import org.springframework.http.HttpStatus
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import spring.minibanksystem.config.JwtUtil
 import spring.minibanksystem.dto.ResponseDto
 import spring.minibanksystem.dto.request.AccountRequest
-import spring.minibanksystem.dto.request.AuthRequest
-import spring.minibanksystem.dto.response.AuthResponse
+import spring.minibanksystem.dto.request.LoginRequest
+import spring.minibanksystem.dto.request.RegisterRequest
+import spring.minibanksystem.dto.response.LoginResponse
+import spring.minibanksystem.dto.response.RegisterResponse
 import spring.minibanksystem.model.User
 import spring.minibanksystem.model.enum.CurrencyType
 import spring.minibanksystem.repository.UserRepository
@@ -18,11 +21,12 @@ import spring.minibanksystem.util.toSuccess
 class AuthServiceImpl(
     private val userRepo: UserRepository,
     private val passwordEncoder: PasswordEncoder,
-    private val accountService: AccountService
+    private val accountService: AccountService,
+    private val jwtUtil: JwtUtil
 ) : AuthService {
 
     @Transactional
-    override fun register(request : AuthRequest) : ResponseDto<AuthResponse>{
+    override fun register(request : RegisterRequest) : ResponseDto<RegisterResponse>{
         val (username, email,password) = request
         if (userRepo.existsByUsername(username)) {
             throw IllegalArgumentException("Username is already registered")
@@ -42,13 +46,31 @@ class AuthServiceImpl(
         accountService.createAccount(user.id, AccountRequest(CurrencyType.KHR))
         accountService.createAccount(user.id, AccountRequest(CurrencyType.USD))
 
-        return AuthResponse(
+        return RegisterResponse(
             user.id,
             user.username,
             user.email,
         ).toSuccess(
             HttpStatus.CREATED,
             "User registered successfully."
+        )
+    }
+
+    override fun login(request: LoginRequest): ResponseDto<LoginResponse> {
+        val ( email, password) = request
+
+        val user = userRepo.findByEmail(email)
+            ?: throw IllegalArgumentException("Email is not registered")
+        if (!passwordEncoder.matches(password, user.password)){
+            throw IllegalArgumentException("Password is incorrect")
+        }
+
+        val token = jwtUtil.generateToken(user.id, user.email)
+
+        return LoginResponse(
+            token
+        ).toSuccess(
+            message = "Login successful",
         )
     }
 }

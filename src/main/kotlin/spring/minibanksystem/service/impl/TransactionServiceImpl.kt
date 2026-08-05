@@ -9,28 +9,29 @@ import spring.minibanksystem.dto.ResponseDto
 import spring.minibanksystem.dto.request.TransactionRequest
 import spring.minibanksystem.dto.response.TransactionResponse
 import spring.minibanksystem.model.Transaction
-import spring.minibanksystem.model.enum.CurrencyType
 import spring.minibanksystem.model.enum.TransactionType
 import spring.minibanksystem.repository.AccountRepository
 import spring.minibanksystem.repository.TransactionRepository
 import spring.minibanksystem.service.TransactionService
+import spring.minibanksystem.service.AccountAuthorizationService
 import spring.minibanksystem.util.exchangeAmount
 import spring.minibanksystem.util.toSuccess
 import spring.minibanksystem.util.validationAmountLimited
-import java.math.BigDecimal
 
 @Service
 class TransactionServiceImpl(
     private val transactionRepo: TransactionRepository,
-    private val accountRepo: AccountRepository
+    private val accountRepo: AccountRepository,
+    private val accountAuthorizationService: AccountAuthorizationService
 ) : TransactionService {
 
     @Transactional
-    override fun transfer(request: TransactionRequest): ResponseDto<TransactionResponse> {
+    override fun transfer(userId: Long,request: TransactionRequest): ResponseDto<TransactionResponse> {
         val (fromAccount, toAccount, amount) = request
 
         val senderAccount = accountRepo.findByAccountNumber(fromAccount)
             ?: throw IllegalStateException("Account not found")
+        accountAuthorizationService.validateOwner(senderAccount, userId)
         if (amount > senderAccount.balance) {
             throw IllegalArgumentException("Don't have enough balances")
         }
@@ -70,9 +71,10 @@ class TransactionServiceImpl(
         )
     }
 
-    override fun historyTransaction(accountNumber: String, page: Int, size: Int): ResponseDto<Page<TransactionResponse>>{
-       val historyTransaction = accountRepo.findByAccountNumber(accountNumber)
+    override fun historyTransaction(userId: Long,accountNumber: String, page: Int, size: Int): ResponseDto<Page<TransactionResponse>>{
+       val account = accountRepo.findByAccountNumber(accountNumber)
             ?: throw IllegalStateException("Account not found")
+        accountAuthorizationService.validateOwner(account, userId)
         val pageable = PageRequest.of(
             page,
             size,
@@ -80,8 +82,8 @@ class TransactionServiceImpl(
         )
 
         val history = transactionRepo.findByFromAccountOrToAccount(
-            historyTransaction,
-            historyTransaction,
+            account,
+            account,
             pageable
         )
 
@@ -99,5 +101,28 @@ class TransactionServiceImpl(
 
         return response.toSuccess(message = "Display transaction history")
 
+    }
+
+    override fun getTransaction(userId: Long,id: Long): ResponseDto<TransactionResponse> {
+        val transaction = transactionRepo.findById(id)
+            .orElseThrow {
+                IllegalArgumentException("Transaction not found")
+            }
+        if (transaction.fromAccount.owner.id != userId &&
+            transaction.toAccount.owner.id != userId) {
+            throw IllegalArgumentException("You don't have permission to view this transaction")
+        }
+
+        return TransactionResponse(
+           transaction.id,
+            transaction.fromAccount.accountNumber,
+            transaction.toAccount.accountNumber,
+            transaction.currency,
+            transaction.amount,
+            transaction.type,
+            transaction.createdAt
+        ).toSuccess(
+            message = "Get transaction Successful"
+        )
     }
 }
