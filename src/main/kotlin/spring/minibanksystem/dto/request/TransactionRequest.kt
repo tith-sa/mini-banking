@@ -1,15 +1,15 @@
 package spring.minibanksystem.dto.request
 
-import jakarta.validation.constraints.DecimalMax
-import jakarta.validation.constraints.DecimalMin
+import jakarta.validation.constraints.NotBlank
 import java.math.BigDecimal
 
 data class TransactionRequest (
-    val fromAccount: String? = null,
-    val toAccount: String? = null,
+    @field:NotBlank
+    val fromAccount: String,
 
-    @DecimalMax("10000")
-    @DecimalMin("0.01")
+    @field:NotBlank
+    val toAccount: String,
+
     val amount: BigDecimal,
 
-)
+    )

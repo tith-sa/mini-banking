@@ -20,4 +20,10 @@ class AccountController(
         val result = accountService.getAccountByOwner(userId)
         return ResponseEntity.ok(result)
     }
+
+    @GetMapping("/{id}/{ownerId}")
+    fun getAccountById(@PathVariable id: Long , @PathVariable ownerId: Long): ResponseEntity<ResponseDto<AccountResponse>> {
+        val result = accountService.getAccountById(id,ownerId)
+        return ResponseEntity.ok(result)
+    }
 }

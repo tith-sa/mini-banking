@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import spring.minibanksystem.model.enum.CurrencyType
 import java.math.BigDecimal
@@ -26,8 +27,14 @@ data class Account(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn( "owner_id", nullable = false)
-    val owner: User,
+    var owner: User,
 
-) : BaseModel()
+    @OneToMany(mappedBy = "fromAccount", fetch = FetchType.LAZY)
+    var outGoingTransaction: MutableList<Transaction> = mutableListOf(),
+
+    @OneToMany(mappedBy = "toAccount", fetch = FetchType.LAZY)
+    var inComingTransaction: MutableList<Transaction> = mutableListOf(),
+
+    ) : BaseModel()
 
 // get user but don't want account

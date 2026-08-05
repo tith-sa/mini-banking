@@ -7,4 +7,5 @@ import spring.minibanksystem.dto.response.AccountResponse
 interface AccountService {
     fun createAccount(userId: Long,request : AccountRequest): ResponseDto<AccountResponse>
     fun getAccountByOwner(ownerId: Long) : ResponseDto<List<AccountResponse>>
+    fun getAccountById(id: Long, ownerId: Long) : ResponseDto<AccountResponse>
 }

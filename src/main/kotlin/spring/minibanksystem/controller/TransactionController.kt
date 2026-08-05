@@ -21,18 +21,6 @@ class TransactionController(
    private val transactionService: TransactionService,
 ) {
 
-    @PostMapping("/deposit")
-    fun deposit(@Valid @RequestBody request : TransactionRequest): ResponseEntity<ResponseDto<TransactionResponse>> {
-        val result = transactionService.deposit(request)
-        return ResponseEntity.ok(result)
-    }
-
-    @PostMapping("/withdraw")
-    fun withdraw(@Valid @RequestBody request: TransactionRequest): ResponseEntity<ResponseDto<TransactionResponse>> {
-        val result = transactionService.withdraw(request)
-        return ResponseEntity.ok(result)
-    }
-
     @PostMapping("/transfer")
     fun transfer(@Valid @RequestBody request: TransactionRequest) : ResponseEntity<ResponseDto<TransactionResponse>> {
         val result = transactionService.transfer(request)
@@ -48,4 +36,5 @@ class TransactionController(
         val result = transactionService.historyTransaction(accountNumber, page, size)
         return ResponseEntity.ok(result)
     }
+
 }

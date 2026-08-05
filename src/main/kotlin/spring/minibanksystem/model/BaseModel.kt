@@ -14,7 +14,7 @@ import java.time.LocalDateTime
 abstract class BaseModel(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    var id: Long = 0,
 
     @CreationTimestamp
     @Column("created_at", nullable = false, updatable = false)

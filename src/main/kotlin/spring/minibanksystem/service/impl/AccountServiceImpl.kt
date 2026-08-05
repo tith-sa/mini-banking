@@ -65,4 +65,23 @@ class AccountServiceImpl(
         }
         return response.toSuccess(message = "Getting accounts By Owner")
     }
+
+    override fun getAccountById(id: Long, ownerId: Long): ResponseDto<AccountResponse> {
+        val account = accountRepo.findById(id)
+            .orElseThrow{
+                IllegalArgumentException("Account Not Found")
+            }
+        if (account.owner.id != ownerId) {
+            throw IllegalArgumentException("Not Your Account")
+        }
+        return AccountResponse(
+            account.id,
+            account.accountNumber,
+            account.currency,
+            account.balance
+        ).toSuccess(
+            message = "Getting account"
+        )
+    }
+
 }

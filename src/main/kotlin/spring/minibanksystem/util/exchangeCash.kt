@@ -1,2 +1,0 @@
-package spring.minibanksystem.util
-
