@@ -5,11 +5,12 @@ import org.springframework.stereotype.Service
 import spring.minibanksystem.dto.ResponseDto
 import spring.minibanksystem.dto.request.AccountRequest
 import spring.minibanksystem.dto.response.AccountResponse
+import spring.minibanksystem.handleException.HandleException
 import spring.minibanksystem.model.Account
 import spring.minibanksystem.repository.AccountRepository
 import spring.minibanksystem.repository.UserRepository
 import spring.minibanksystem.service.AccountService
-import spring.minibanksystem.service.AccountAuthorizationService
+import spring.minibanksystem.service.AuthorizationService
 import spring.minibanksystem.util.generatedAccountNumber
 import spring.minibanksystem.util.toSuccess
 
@@ -17,19 +18,18 @@ import spring.minibanksystem.util.toSuccess
 class AccountServiceImpl(
     private val accountRepo: AccountRepository,
     private val userRepo: UserRepository,
-    private val accountAuthorizationService: AccountAuthorizationService
+    private val authorizationService: AuthorizationService
 ) : AccountService {
 
     override fun createAccount(userId: Long,request: AccountRequest): ResponseDto<AccountResponse> {
         val (currency, balance) = request
         val owner = userRepo.findById(userId)
             .orElseThrow {
-                IllegalArgumentException("User Not Found")
+                HandleException.ResourceNotFound("User Not Found")
             }
         val accountNumber = generatedAccountNumber()
-        print(accountNumber)
         if (accountRepo.existsByAccountNumber(accountNumber)) {
-            throw IllegalArgumentException("Account already exists")
+            throw HandleException.BadRequest("Account already exists")
         }
 
         val account = Account(
@@ -54,7 +54,7 @@ class AccountServiceImpl(
     override fun getAccountByOwner(ownerId: Long): ResponseDto<List<AccountResponse>>{
         val owner = userRepo.findById(ownerId)
             .orElseThrow{
-                IllegalArgumentException("User Not Found")
+                HandleException.ResourceNotFound("User Not Found")
             }
         val accounts = accountRepo.findByOwner(owner)
         val response = accounts.map {
@@ -71,9 +71,9 @@ class AccountServiceImpl(
     override fun getAccountById(id: Long, ownerId: Long): ResponseDto<AccountResponse> {
         val account = accountRepo.findById(id)
             .orElseThrow{
-                IllegalArgumentException("Account Not Found")
+                HandleException.ResourceNotFound("Account Not Found")
             }
-        accountAuthorizationService.validateOwner(account, ownerId)
+        authorizationService.validateOwner(account, ownerId)
         return AccountResponse(
             account.id,
             account.accountNumber,

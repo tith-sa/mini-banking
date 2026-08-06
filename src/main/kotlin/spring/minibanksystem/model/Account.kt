@@ -15,10 +15,10 @@ import java.math.BigDecimal
 @Entity
 @Table(name = "accounts")
 data class Account(
-    @Column( "account_id", nullable = false, unique = true)
+    @Column( "account_number", nullable = false, unique = true, length = 20)
     var accountNumber: String,
 
-    @Column(nullable = false)
+    @Column(nullable = false,length = 10)
     @Enumerated(EnumType.STRING)
     var currency: CurrencyType,
 
@@ -36,5 +36,3 @@ data class Account(
     var inComingTransaction: MutableList<Transaction> = mutableListOf(),
 
     ) : BaseModel()
-
-// get user but don't want account

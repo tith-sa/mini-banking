@@ -1,6 +1,5 @@
 package spring.minibanksystem.controller
 
-import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.http.ResponseEntity
@@ -44,12 +43,13 @@ class TransactionController(
         return ResponseEntity.ok(result)
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/history/{accountNumber}/{id}")
     fun gatTransaction(
         @PathVariable id: Long,
+        @PathVariable accountNumber: String,
         @RequestAttribute userId: Long
     ) : ResponseEntity<ResponseDto<TransactionResponse>> {
-        val result = transactionService.getTransaction(userId,id)
+        val result = transactionService.getTransaction(userId,accountNumber, id)
         return ResponseEntity.ok(result)
     }
 

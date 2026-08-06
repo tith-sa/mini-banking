@@ -10,6 +10,7 @@ import spring.minibanksystem.dto.request.LoginRequest
 import spring.minibanksystem.dto.request.RegisterRequest
 import spring.minibanksystem.dto.response.LoginResponse
 import spring.minibanksystem.dto.response.RegisterResponse
+import spring.minibanksystem.handleException.HandleException
 import spring.minibanksystem.model.User
 import spring.minibanksystem.model.enum.CurrencyType
 import spring.minibanksystem.repository.UserRepository
@@ -29,10 +30,10 @@ class AuthServiceImpl(
     override fun register(request : RegisterRequest) : ResponseDto<RegisterResponse>{
         val (username, email,password) = request
         if (userRepo.existsByUsername(username)) {
-            throw IllegalArgumentException("Username is already registered")
+            throw HandleException.BadRequest("Username is already registered")
         }
         if (userRepo.existsByEmail(email)) {
-            throw IllegalArgumentException("Email is already registered")
+            throw HandleException.BadRequest("Email is already registered")
         }
         val hashPassword = passwordEncoder.encode(password)
         val user = User(
@@ -60,9 +61,9 @@ class AuthServiceImpl(
         val ( email, password) = request
 
         val user = userRepo.findByEmail(email)
-            ?: throw IllegalArgumentException("Email is not registered")
+            ?: throw HandleException.BadRequest("Email is not registered")
         if (!passwordEncoder.matches(password, user.password)){
-            throw IllegalArgumentException("Password is incorrect")
+            throw HandleException.BadRequest("Password is incorrect")
         }
 
         val token = jwtUtil.generateToken(user.id, user.email)

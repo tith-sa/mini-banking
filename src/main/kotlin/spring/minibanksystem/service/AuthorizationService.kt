@@ -1,21 +1,21 @@
 package spring.minibanksystem.service
 
 import org.springframework.stereotype.Service
+import spring.minibanksystem.handleException.HandleException
 import spring.minibanksystem.model.Account
+import spring.minibanksystem.model.Transaction
 
 @Service
-class AccountAuthorizationService {
+class AuthorizationService {
 
     fun validateOwner(
         account: Account,
         userId: Long
     ) {
         if (account.owner.id != userId) {
-            throw IllegalArgumentException(
-                "You don't have permission"
+            throw HandleException.Authorization(
+                "Access is denied"
             )
         }
     }
-
-
 }

@@ -13,10 +13,10 @@ data class User(
     @Column(unique = true,nullable = false)
     var username: String,
 
-    @Column(unique = true,nullable = false)
+    @Column(unique = true,nullable = false, length = 254)
     var email: String,
 
-    @Column(nullable = false, length = 500)
+    @Column(nullable = false, length = 60)
     var password: String,
 
     @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY)

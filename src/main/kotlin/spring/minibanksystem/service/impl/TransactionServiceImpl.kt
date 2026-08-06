@@ -8,12 +8,13 @@ import org.springframework.stereotype.Service
 import spring.minibanksystem.dto.ResponseDto
 import spring.minibanksystem.dto.request.TransactionRequest
 import spring.minibanksystem.dto.response.TransactionResponse
+import spring.minibanksystem.handleException.HandleException
 import spring.minibanksystem.model.Transaction
 import spring.minibanksystem.model.enum.TransactionType
 import spring.minibanksystem.repository.AccountRepository
 import spring.minibanksystem.repository.TransactionRepository
 import spring.minibanksystem.service.TransactionService
-import spring.minibanksystem.service.AccountAuthorizationService
+import spring.minibanksystem.service.AuthorizationService
 import spring.minibanksystem.util.exchangeAmount
 import spring.minibanksystem.util.toSuccess
 import spring.minibanksystem.util.validationAmountLimited
@@ -22,7 +23,7 @@ import spring.minibanksystem.util.validationAmountLimited
 class TransactionServiceImpl(
     private val transactionRepo: TransactionRepository,
     private val accountRepo: AccountRepository,
-    private val accountAuthorizationService: AccountAuthorizationService
+    private val authorizationService: AuthorizationService
 ) : TransactionService {
 
     @Transactional
@@ -30,16 +31,16 @@ class TransactionServiceImpl(
         val (fromAccount, toAccount, amount) = request
 
         val senderAccount = accountRepo.findByAccountNumber(fromAccount)
-            ?: throw IllegalStateException("Account not found")
-        accountAuthorizationService.validateOwner(senderAccount, userId)
+            ?: throw HandleException.ResourceNotFound("Account not found")
+        authorizationService.validateOwner(senderAccount, userId)
         if (amount > senderAccount.balance) {
-            throw IllegalArgumentException("Don't have enough balances")
+            throw HandleException.BadRequest("Don't have enough balances")
         }
         amount.validationAmountLimited(senderAccount.currency)
         val receiverAccount = accountRepo.findByAccountNumber(toAccount)
-            ?: throw IllegalStateException("Account not found")
+            ?: throw HandleException.ResourceNotFound("Account not found")
         if (senderAccount.accountNumber == receiverAccount.accountNumber) {
-            throw IllegalArgumentException("Cannot transfer to this account")
+            throw HandleException.BadRequest("Cannot transfer to this account")
         }
 
         val convertAmount = amount.exchangeAmount(senderAccount.currency, receiverAccount.currency)
@@ -73,8 +74,8 @@ class TransactionServiceImpl(
 
     override fun historyTransaction(userId: Long,accountNumber: String, page: Int, size: Int): ResponseDto<Page<TransactionResponse>>{
        val account = accountRepo.findByAccountNumber(accountNumber)
-            ?: throw IllegalStateException("Account not found")
-        accountAuthorizationService.validateOwner(account, userId)
+            ?: throw HandleException.ResourceNotFound("Account not found")
+        authorizationService.validateOwner(account, userId)
         val pageable = PageRequest.of(
             page,
             size,
@@ -103,15 +104,15 @@ class TransactionServiceImpl(
 
     }
 
-    override fun getTransaction(userId: Long,id: Long): ResponseDto<TransactionResponse> {
-        val transaction = transactionRepo.findById(id)
+    override fun getTransaction(userId: Long,accountNumber: String,id: Long): ResponseDto<TransactionResponse> {
+        val account = accountRepo.findByAccountNumber(accountNumber)
+            ?: throw HandleException.ResourceNotFound("Account not found")
+        authorizationService.validateOwner(account, userId)
+
+        val transaction = transactionRepo.findByFromAccountOrToAccountAndId(account,id)
             .orElseThrow {
-                IllegalArgumentException("Transaction not found")
+                HandleException.ResourceNotFound("Transaction not found")
             }
-        if (transaction.fromAccount.owner.id != userId &&
-            transaction.toAccount.owner.id != userId) {
-            throw IllegalArgumentException("You don't have permission to view this transaction")
-        }
 
         return TransactionResponse(
            transaction.id,

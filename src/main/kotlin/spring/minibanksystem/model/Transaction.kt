@@ -25,14 +25,14 @@ data class Transaction (
     var toAccount: Account,
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     var currency: CurrencyType,
 
     @Column(nullable = false)
     var amount: BigDecimal,
 
     @Enumerated(EnumType.STRING)
-    @Column("transaction_type", nullable = false)
+    @Column("transaction_type", nullable = false,length = 10)
     var type : TransactionType
 
 ): BaseModel()
