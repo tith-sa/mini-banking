@@ -2,24 +2,26 @@ package spring.minibanksystem.model
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.FetchType
-import jakarta.persistence.OneToMany
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
 import jakarta.persistence.Table
 
 @Entity
-@Table(name = "users")
-data class User(
+@Table(name = "Users")
+class User(
 
-    @Column(unique = true,nullable = false)
-    var username: String,
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    var id: Long? = null,
 
-    @Column(unique = true,nullable = false, length = 254)
-    var email: String,
+    @Column("username", unique = true)
+    var username: String?,
 
-    @Column(nullable = false, length = 60)
-    var password: String,
+    @Column("email", unique = true, length = 254)
+    var email: String?,
 
-    @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY)
-    var accounts: MutableList<Account> = mutableListOf(),
+    @Column("password", length = 60)
+    var password: String?
 
 ) : BaseModel()

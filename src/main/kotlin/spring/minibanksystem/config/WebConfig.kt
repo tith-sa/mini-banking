@@ -14,9 +14,7 @@ class WebConfig(
             .addPathPatterns("/api/transactions/**")
             .addPathPatterns("/api/transfer/**")
             .excludePathPatterns(
-                "/api/auth/**",
-                "/swagger-ui/**",
-                "/v3/api-docs/**"
+                "/api/auth/**"
             )
     }
 }

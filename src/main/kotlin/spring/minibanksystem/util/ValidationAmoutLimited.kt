@@ -4,7 +4,10 @@ import spring.minibanksystem.handleException.HandleException
 import spring.minibanksystem.model.enum.CurrencyType
 import java.math.BigDecimal
 
-fun BigDecimal.validationAmountLimited(fromCurrency: CurrencyType){
+fun BigDecimal.validationAmountLimited(fromCurrency: CurrencyType?){
+    if (fromCurrency == null) {
+        throw HandleException.BadRequest("Currency is required.")
+    }
     val maxAmount = when (fromCurrency) {
         CurrencyType.USD -> BigDecimal("10000")
         CurrencyType.KHR -> BigDecimal("40000000")

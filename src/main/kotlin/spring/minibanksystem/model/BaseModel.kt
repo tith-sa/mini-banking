@@ -1,26 +1,31 @@
 package spring.minibanksystem.model
 
+import com.fasterxml.jackson.annotation.JsonFormat
 import jakarta.persistence.Column
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.GenerationType
-import jakarta.persistence.Id
 import jakarta.persistence.MappedSuperclass
 import org.hibernate.annotations.CreationTimestamp
 import org.hibernate.annotations.UpdateTimestamp
+import spring.minibanksystem.config.AppConstants
 import java.time.LocalDateTime
 
 //sharing the same field
 @MappedSuperclass
 abstract class BaseModel(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long = 0,
 
     @CreationTimestamp
-    @Column("created_at", nullable = false, updatable = false)
+    @JsonFormat(
+        shape = JsonFormat.Shape.STRING,
+        pattern = AppConstants.DATETIME_PATTERN,
+        timezone = AppConstants.ZONE_ID
+    )
+    @Column("createdAt", nullable = false, updatable = false)
     var createdAt: LocalDateTime? = null,
 
     @UpdateTimestamp
-    @Column("updated_at", nullable = false)
+    @JsonFormat(shape = JsonFormat.Shape.STRING,
+        pattern = AppConstants.DATETIME_PATTERN,
+        timezone = AppConstants.ZONE_ID
+    )
+    @Column("updatedAt", nullable = false)
     var updatedAt: LocalDateTime? = null,
 )

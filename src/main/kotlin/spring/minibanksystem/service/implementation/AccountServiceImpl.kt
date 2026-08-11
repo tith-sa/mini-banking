@@ -1,15 +1,15 @@
-package spring.minibanksystem.service.impl
+package spring.minibanksystem.service.implementation
 
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
-import spring.minibanksystem.dto.ResponseDto
+import spring.minibanksystem.dto.ResponseSuccess
 import spring.minibanksystem.dto.request.AccountRequest
 import spring.minibanksystem.dto.response.AccountResponse
 import spring.minibanksystem.handleException.HandleException
 import spring.minibanksystem.model.Account
 import spring.minibanksystem.repository.AccountRepository
 import spring.minibanksystem.repository.UserRepository
-import spring.minibanksystem.service.AccountService
+import spring.minibanksystem.service.interfaceService.AccountService
 import spring.minibanksystem.service.AuthorizationService
 import spring.minibanksystem.util.generatedAccountNumber
 import spring.minibanksystem.util.toSuccess
@@ -21,8 +21,11 @@ class AccountServiceImpl(
     private val authorizationService: AuthorizationService
 ) : AccountService {
 
-    override fun createAccount(userId: Long,request: AccountRequest): ResponseDto<AccountResponse> {
+    override fun createAccount(userId: Long?,request: AccountRequest): ResponseSuccess<AccountResponse> {
         val (currency, balance) = request
+        if (userId == null) {
+            throw HandleException.BadRequest("User ID is required")
+        }
         val owner = userRepo.findById(userId)
             .orElseThrow {
                 HandleException.ResourceNotFound("User Not Found")
@@ -36,7 +39,7 @@ class AccountServiceImpl(
             accountNumber = accountNumber,
             currency = currency,
             balance = balance,
-            owner = owner
+            ownerId = owner.id
         )
         accountRepo.save(account)
 
@@ -51,12 +54,15 @@ class AccountServiceImpl(
         )
     }
 
-    override fun getAccountByOwner(ownerId: Long): ResponseDto<List<AccountResponse>>{
+    override fun getAccountByOwner(ownerId: Long?): ResponseSuccess<List<AccountResponse>>{
+        if (ownerId == null) {
+            throw HandleException.BadRequest("User ID is required")
+        }
         val owner = userRepo.findById(ownerId)
             .orElseThrow{
                 HandleException.ResourceNotFound("User Not Found")
             }
-        val accounts = accountRepo.findByOwner(owner)
+        val accounts = accountRepo.findByOwnerId(owner.id)
         val response = accounts.map {
             AccountResponse(
                 it.id,
@@ -68,7 +74,10 @@ class AccountServiceImpl(
         return response.toSuccess(message = "Getting accounts By Owner")
     }
 
-    override fun getAccountById(id: Long, ownerId: Long): ResponseDto<AccountResponse> {
+    override fun getAccountById(id: Long?, ownerId: Long?): ResponseSuccess<AccountResponse> {
+        if (id == null) {
+            throw HandleException.BadRequest("User ID is required")
+        }
         val account = accountRepo.findById(id)
             .orElseThrow{
                 HandleException.ResourceNotFound("Account Not Found")

@@ -4,14 +4,16 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import org.springframework.data.web.PagedModel
 import org.springframework.stereotype.Repository
+import spring.minibanksystem.dto.ResponsePagination
 import spring.minibanksystem.model.Account
 import spring.minibanksystem.model.Transaction
 import java.util.Optional
 
 @Repository
 interface TransactionRepository : JpaRepository<Transaction, Long> {
-    fun findByFromAccountOrToAccount(fromAccount: Account, toAccount: Account, pageable: Pageable) : Page<Transaction>
+    fun findByFromAccountOrToAccount(fromAccount: String?, toAccount: String?, pageable: Pageable) : Page<Transaction>
 
     @Query ("""
     SELECT t
@@ -21,6 +23,6 @@ interface TransactionRepository : JpaRepository<Transaction, Long> {
         t.fromAccount = :account
         OR t.toAccount = :account
     )
-    """)
-    fun findByFromAccountOrToAccountAndId(account: Account, id: Long): Optional<Transaction>
+    """) // JPQL
+    fun findByFromAccountOrToAccountAndId(account: String?, id: Long?): Optional<Transaction>
 }

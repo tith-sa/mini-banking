@@ -1,10 +1,10 @@
-package spring.minibanksystem.service.impl
+package spring.minibanksystem.service.implementation
 import jakarta.transaction.Transactional
 import org.springframework.http.HttpStatus
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import spring.minibanksystem.config.JwtUtil
-import spring.minibanksystem.dto.ResponseDto
+import spring.minibanksystem.dto.ResponseSuccess
 import spring.minibanksystem.dto.request.AccountRequest
 import spring.minibanksystem.dto.request.LoginRequest
 import spring.minibanksystem.dto.request.RegisterRequest
@@ -14,8 +14,8 @@ import spring.minibanksystem.handleException.HandleException
 import spring.minibanksystem.model.User
 import spring.minibanksystem.model.enum.CurrencyType
 import spring.minibanksystem.repository.UserRepository
-import spring.minibanksystem.service.AccountService
-import spring.minibanksystem.service.AuthService
+import spring.minibanksystem.service.interfaceService.AccountService
+import spring.minibanksystem.service.interfaceService.AuthService
 import spring.minibanksystem.util.toSuccess
 
 @Service
@@ -27,8 +27,8 @@ class AuthServiceImpl(
 ) : AuthService {
 
     @Transactional
-    override fun register(request : RegisterRequest) : ResponseDto<RegisterResponse>{
-        val (username, email,password) = request
+    override fun register(request : RegisterRequest) : ResponseSuccess<RegisterResponse>{
+        val (username, email,password) = request // object destructuring
         if (userRepo.existsByUsername(username)) {
             throw HandleException.BadRequest("Username is already registered")
         }
@@ -42,7 +42,6 @@ class AuthServiceImpl(
             password = hashPassword
         )
         userRepo.save(user)
-        print("Created new user $user")
 
         accountService.createAccount(user.id, AccountRequest(CurrencyType.KHR))
         accountService.createAccount(user.id, AccountRequest(CurrencyType.USD))
@@ -57,7 +56,7 @@ class AuthServiceImpl(
         )
     }
 
-    override fun login(request: LoginRequest): ResponseDto<LoginResponse> {
+    override fun login(request: LoginRequest): ResponseSuccess<LoginResponse> {
         val ( email, password) = request
 
         val user = userRepo.findByEmail(email)
@@ -66,7 +65,7 @@ class AuthServiceImpl(
             throw HandleException.BadRequest("Password is incorrect")
         }
 
-        val token = jwtUtil.generateToken(user.id, user.email)
+        val token = jwtUtil.generateToken(user.id)
 
         return LoginResponse(
             token

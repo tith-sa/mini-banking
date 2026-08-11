@@ -4,35 +4,30 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
-import jakarta.persistence.FetchType
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
-import jakarta.persistence.OneToMany
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
 import jakarta.persistence.Table
 import spring.minibanksystem.model.enum.CurrencyType
 import java.math.BigDecimal
 
 @Entity
-@Table(name = "accounts")
-data class Account(
-    @Column( "account_number", nullable = false, unique = true, length = 20)
-    var accountNumber: String,
+@Table(name = "Accounts")
+class Account(
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    var id: Long? = null,
 
-    @Column(nullable = false,length = 10)
+    @Column( "accountNumber", length = 20)
+    var accountNumber: String? = null,
+
     @Enumerated(EnumType.STRING)
-    var currency: CurrencyType,
+    @Column("currency",length = 10)
+    var currency: CurrencyType? = null,
 
-    @Column(nullable = false)
-    var balance: BigDecimal,
+    @Column("balance")
+    var balance: BigDecimal? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn( "owner_id", nullable = false)
-    var owner: User,
-
-    @OneToMany(mappedBy = "fromAccount", fetch = FetchType.LAZY)
-    var outGoingTransaction: MutableList<Transaction> = mutableListOf(),
-
-    @OneToMany(mappedBy = "toAccount", fetch = FetchType.LAZY)
-    var inComingTransaction: MutableList<Transaction> = mutableListOf(),
-
+    @Column( "ownerId")
+    var ownerId: Long? = null,
     ) : BaseModel()

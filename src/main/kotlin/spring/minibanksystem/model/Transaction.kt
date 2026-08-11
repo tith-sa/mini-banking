@@ -4,35 +4,42 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
-import jakarta.persistence.FetchType
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
 import jakarta.persistence.Table
 import spring.minibanksystem.model.enum.CurrencyType
+import spring.minibanksystem.model.enum.TransactionStatus
 import spring.minibanksystem.model.enum.TransactionType
 import java.math.BigDecimal
 
 @Entity
-@Table(name = "transactions")
-data class Transaction (
+@Table(name = "Transactions")
+class Transaction (
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn("from_account", nullable = false)
-    var fromAccount: Account,
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    var id: Long? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn("to_account", nullable = false)
-    var toAccount: Account,
+    @Column("fromAccount", length = 20)
+    var fromAccount: String? = null,
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
-    var currency: CurrencyType,
-
-    @Column(nullable = false)
-    var amount: BigDecimal,
+    @Column("toAccount", length = 20)
+    var toAccount: String? = null,
 
     @Enumerated(EnumType.STRING)
-    @Column("transaction_type", nullable = false,length = 10)
-    var type : TransactionType
+    @Column("currency", length = 10)
+    var currency: CurrencyType? = null,
+
+    @Column("amount")
+    var amount: BigDecimal? = null,
+
+    @Enumerated(EnumType.STRING)
+    @Column("type", length = 10)
+    var type: TransactionType? = null,
+
+    @Enumerated(EnumType.STRING)
+    @Column("Status", length = 20)
+    var status: TransactionStatus? = null,
 
 ): BaseModel()

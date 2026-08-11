@@ -6,9 +6,9 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import spring.minibanksystem.dto.ResponseDto
+import spring.minibanksystem.dto.ResponseSuccess
 import spring.minibanksystem.dto.response.AccountResponse
-import spring.minibanksystem.service.AccountService
+import spring.minibanksystem.service.interfaceService.AccountService
 
 @RestController
 @RequestMapping("/api/accounts")
@@ -19,7 +19,7 @@ class AccountController(
     @GetMapping
     fun getAccountByUser(
         @RequestAttribute userId: Long
-    ): ResponseEntity<ResponseDto<List<AccountResponse>>> {
+    ): ResponseEntity<ResponseSuccess<List<AccountResponse>>> {
         val result = accountService.getAccountByOwner(userId)
         return ResponseEntity.ok(result)
     }
@@ -28,7 +28,7 @@ class AccountController(
     fun getAccountById(
         @PathVariable id: Long,
         @RequestAttribute userId: Long
-    ): ResponseEntity<ResponseDto<AccountResponse>> {
+    ): ResponseEntity<ResponseSuccess<AccountResponse>> {
         val result = accountService.getAccountById(id, userId)
         return ResponseEntity.ok(result)
     }

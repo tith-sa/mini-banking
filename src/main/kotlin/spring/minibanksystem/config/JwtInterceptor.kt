@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerInterceptor
+import spring.minibanksystem.handleException.HandleException
 
 @Component
 class JwtInterceptor(
@@ -16,8 +17,7 @@ class JwtInterceptor(
     ): Boolean {
         val authHeader = request.getHeader("Authorization")
         if (authHeader.isNullOrBlank() || !authHeader.startsWith("Bearer ")) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")
-            return false
+            throw HandleException.Authentication("Invalid Authorization")
         }
         val token = authHeader.removePrefix("Bearer ")
 
@@ -26,8 +26,7 @@ class JwtInterceptor(
             request.setAttribute("userId", userId)
            return true
        }catch (ex: Exception) {
-           response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")
-           return false
+           throw HandleException.Authentication("Invalid Authorization")
        }
     }
 }

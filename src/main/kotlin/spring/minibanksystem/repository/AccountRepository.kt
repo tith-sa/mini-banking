@@ -7,7 +7,7 @@ import spring.minibanksystem.model.User
 
 @Repository
 interface AccountRepository : JpaRepository<Account, Long> {
-    fun existsByAccountNumber(accountNumber: String): Boolean
-    fun findByOwner(owner: User): List<Account>
-    fun findByAccountNumber(accountNumber: String): Account?
+    fun existsByAccountNumber(accountNumber: String?): Boolean
+    fun findByOwnerId(ownerId: Long?): List<Account>
+    fun findByAccountNumber(accountNumber: String?): Account?
 }

@@ -5,11 +5,11 @@ import java.math.BigDecimal
 
 data class TransactionRequest (
     @field:NotBlank
-    val fromAccount: String,
+    val fromAccount: String?,
 
     @field:NotBlank
-    val toAccount: String,
+    val toAccount: String?,
 
-    val amount: BigDecimal,
+    val amount: BigDecimal?,
 
     )

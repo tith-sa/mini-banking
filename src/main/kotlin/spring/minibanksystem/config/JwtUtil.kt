@@ -14,10 +14,9 @@ class JwtUtil(
 ) {
     private val secret: SecretKey = Keys.hmacShaKeyFor(privateKey.toByteArray())
 
-    fun generateToken(userId: Long, email: String): String{
+    fun generateToken(userId: Long?): String?{
         return Jwts.builder()
-            .subject(email)
-            .claim("userId", userId)
+            .subject(userId.toString())
             .issuedAt(Date())
             .expiration(Date(System.currentTimeMillis() + 86400000))
             .signWith(secret)
@@ -31,10 +30,6 @@ class JwtUtil(
             .parseSignedClaims(token)
             .payload
 
-    fun getUserId(token: String): Long {
-        return getClaims(token)["userId"]
-            .toString()
-            .toLong()
-    }
+    fun getUserId(token: String): Long = getClaims(token).subject.toLong()
 
 }

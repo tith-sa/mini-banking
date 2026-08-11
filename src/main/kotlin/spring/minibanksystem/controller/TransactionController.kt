@@ -11,10 +11,11 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import spring.minibanksystem.dto.ResponseDto
+import spring.minibanksystem.dto.ResponsePagination
+import spring.minibanksystem.dto.ResponseSuccess
 import spring.minibanksystem.dto.request.TransactionRequest
 import spring.minibanksystem.dto.response.TransactionResponse
-import spring.minibanksystem.service.TransactionService
+import spring.minibanksystem.service.interfaceService.TransactionService
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -27,7 +28,7 @@ class TransactionController(
         @Valid
         @RequestBody request: TransactionRequest,
         @RequestAttribute userId: Long
-    ) : ResponseEntity<ResponseDto<TransactionResponse>> {
+    ) : ResponseEntity<ResponseSuccess<TransactionResponse>> {
         val result = transactionService.transfer(userId,request)
         return ResponseEntity.ok(result)
     }
@@ -35,10 +36,10 @@ class TransactionController(
     @GetMapping("/history/{accountNumber}")
     fun historyTransaction(
         @PathVariable accountNumber: String,
-        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "1") page: Int,
         @RequestParam(defaultValue = "10") size: Int,
         @RequestAttribute userId: Long
-    ) : ResponseEntity<ResponseDto<Page<TransactionResponse>>> {
+    ) : ResponseEntity<ResponseSuccess<ResponsePagination<TransactionResponse>>> {
         val result = transactionService.historyTransaction(userId,accountNumber, page, size)
         return ResponseEntity.ok(result)
     }
@@ -48,7 +49,7 @@ class TransactionController(
         @PathVariable id: Long,
         @PathVariable accountNumber: String,
         @RequestAttribute userId: Long
-    ) : ResponseEntity<ResponseDto<TransactionResponse>> {
+    ) : ResponseEntity<ResponseSuccess<TransactionResponse>> {
         val result = transactionService.getTransaction(userId,accountNumber, id)
         return ResponseEntity.ok(result)
     }
