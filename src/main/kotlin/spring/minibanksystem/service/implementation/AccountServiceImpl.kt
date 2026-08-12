@@ -11,8 +11,8 @@ import spring.minibanksystem.repository.AccountRepository
 import spring.minibanksystem.repository.UserRepository
 import spring.minibanksystem.service.interfaceService.AccountService
 import spring.minibanksystem.service.AuthorizationService
+import spring.minibanksystem.util.buildSuccess
 import spring.minibanksystem.util.generatedAccountNumber
-import spring.minibanksystem.util.toSuccess
 
 @Service
 class AccountServiceImpl(
@@ -30,9 +30,9 @@ class AccountServiceImpl(
             .orElseThrow {
                 HandleException.ResourceNotFound("User Not Found")
             }
-        val accountNumber = generatedAccountNumber()
-        if (accountRepo.existsByAccountNumber(accountNumber)) {
-            throw HandleException.BadRequest("Account already exists")
+        var accountNumber = generatedAccountNumber()
+        while (accountRepo.existsByAccountNumber(accountNumber)) {
+            accountNumber = generatedAccountNumber()
         }
 
         val account = Account(
@@ -43,15 +43,13 @@ class AccountServiceImpl(
         )
         accountRepo.save(account)
 
-        return AccountResponse(
+        val response = AccountResponse(
             account.id,
             account.accountNumber,
             account.currency,
             account.balance
-        ).toSuccess(
-            HttpStatus.CREATED,
-            "Account ${account.currency} created"
         )
+        return response.buildSuccess(HttpStatus.CREATED, "Account ${account.currency} created")
     }
 
     override fun getAccountByOwner(ownerId: Long?): ResponseSuccess<List<AccountResponse>>{
@@ -71,7 +69,7 @@ class AccountServiceImpl(
                 it.balance
             )
         }
-        return response.toSuccess(message = "Getting accounts By Owner")
+        return response.buildSuccess(message = "Getting accounts By Owner")
     }
 
     override fun getAccountById(id: Long?, ownerId: Long?): ResponseSuccess<AccountResponse> {
@@ -83,14 +81,13 @@ class AccountServiceImpl(
                 HandleException.ResourceNotFound("Account Not Found")
             }
         authorizationService.validateOwner(account, ownerId)
-        return AccountResponse(
+        val response = AccountResponse(
             account.id,
             account.accountNumber,
             account.currency,
             account.balance,
-        ).toSuccess(
-            message = "Getting account"
         )
+        return response.buildSuccess(message = "Getting account")
     }
 
 }

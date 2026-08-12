@@ -1,14 +1,13 @@
 package spring.minibanksystem.service.implementation
 
 import jakarta.transaction.Transactional
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import spring.minibanksystem.dto.ResponsePageMeta
 import spring.minibanksystem.dto.ResponsePagination
 import spring.minibanksystem.dto.ResponseSuccess
 import spring.minibanksystem.dto.request.TransactionRequest
+import spring.minibanksystem.dto.request.TransactionSearchRequest
 import spring.minibanksystem.dto.response.TransactionResponse
 import spring.minibanksystem.handleException.HandleException
 import spring.minibanksystem.model.Transaction
@@ -16,11 +15,12 @@ import spring.minibanksystem.model.enum.TransactionStatus
 import spring.minibanksystem.model.enum.TransactionType
 import spring.minibanksystem.repository.AccountRepository
 import spring.minibanksystem.repository.TransactionRepository
+import spring.minibanksystem.repository.specification.TransactionSpecification
 import spring.minibanksystem.service.interfaceService.TransactionService
 import spring.minibanksystem.service.AuthorizationService
 import spring.minibanksystem.service.TransactionStatusService
+import spring.minibanksystem.util.buildSuccess
 import spring.minibanksystem.util.exchangeAmount
-import spring.minibanksystem.util.toSuccess
 import spring.minibanksystem.util.validationAmountLimited
 import java.math.BigDecimal
 
@@ -113,7 +113,7 @@ class TransactionServiceImpl(
             throw e
         }
 
-        return TransactionResponse(
+        val response = TransactionResponse(
             savedTransfer.id,
             savedTransfer.fromAccount,
             savedTransfer.toAccount,
@@ -122,9 +122,9 @@ class TransactionServiceImpl(
             savedTransfer.type,
             TransactionStatus.COMPLETED,
             savedTransfer.createdAt
-        ).toSuccess(
-            message = "Transfer Successful"
         )
+
+        return response.buildSuccess(message = "Transfer successfully")
     }
 
     override fun historyTransaction(userId: Long?,accountNumber: String?, page: Int, size: Int): ResponseSuccess<ResponsePagination <TransactionResponse>> {
@@ -167,7 +167,8 @@ class TransactionServiceImpl(
             ),
             transaction,
         )
-        return pagination.toSuccess(message = "Display transaction history")
+
+        return pagination.buildSuccess(message = "Display transaction history")
 
     }
 
@@ -189,12 +190,13 @@ class TransactionServiceImpl(
             ?: throw HandleException.ResourceNotFound("Account not found")
         authorizationService.validateOwner(account, userId)
 
-        val transaction = transactionRepo.findByFromAccountOrToAccountAndId(account.accountNumber,id)
+        val spec = TransactionSpecification.findByIdAndAccounts(id,account.accountNumber)
+        val transaction = transactionRepo.findOne(spec)
             .orElseThrow {
                 HandleException.ResourceNotFound("Transaction not found")
             }
 
-        return TransactionResponse(
+        val response = TransactionResponse(
            transaction.id,
             transaction.fromAccount,
             transaction.toAccount,
@@ -203,8 +205,29 @@ class TransactionServiceImpl(
             transaction.type,
             transaction.status,
             transaction.createdAt
-        ).toSuccess(
-            message = "Get transaction Successful"
         )
+
+        return response.buildSuccess(message = "Get transaction Successful")
+    }
+
+    override fun searchTransactionHistory(
+        userId: Long?,
+        request: TransactionSearchRequest
+    ): ResponseSuccess<List<TransactionResponse>> {
+        val spec = TransactionSpecification.buildSpecification(request)
+        val transactions =  transactionRepo.findAll(spec)
+        val response = transactions.map {
+            TransactionResponse(
+                it.id,
+                it.fromAccount,
+                it.toAccount,
+                it.currency,
+                it.amount,
+                it.type,
+                it.status,
+                it.createdAt
+            )
+        }
+        return response.buildSuccess(message = "Search transaction history")
     }
 }

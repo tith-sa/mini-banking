@@ -16,7 +16,7 @@ import spring.minibanksystem.model.enum.CurrencyType
 import spring.minibanksystem.repository.UserRepository
 import spring.minibanksystem.service.interfaceService.AccountService
 import spring.minibanksystem.service.interfaceService.AuthService
-import spring.minibanksystem.util.toSuccess
+import spring.minibanksystem.util.buildSuccess
 
 @Service
 class AuthServiceImpl(
@@ -46,14 +46,12 @@ class AuthServiceImpl(
         accountService.createAccount(user.id, AccountRequest(CurrencyType.KHR))
         accountService.createAccount(user.id, AccountRequest(CurrencyType.USD))
 
-        return RegisterResponse(
+        val response = RegisterResponse(
             user.id,
             user.username,
             user.email,
-        ).toSuccess(
-            HttpStatus.CREATED,
-            "User registered successfully."
         )
+        return response.buildSuccess(HttpStatus.CREATED, "User registered successfully.")
     }
 
     override fun login(request: LoginRequest): ResponseSuccess<LoginResponse> {
@@ -67,10 +65,9 @@ class AuthServiceImpl(
 
         val token = jwtUtil.generateToken(user.id)
 
-        return LoginResponse(
+        val response = LoginResponse(
             token
-        ).toSuccess(
-            message = "Login successful",
         )
+        return response.buildSuccess(message = "Login successful")
     }
 }

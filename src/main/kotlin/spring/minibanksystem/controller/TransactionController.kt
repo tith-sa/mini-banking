@@ -1,9 +1,9 @@
 package spring.minibanksystem.controller
 
 import jakarta.validation.Valid
-import org.springframework.data.domain.Page
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.ModelAttribute
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 import spring.minibanksystem.dto.ResponsePagination
 import spring.minibanksystem.dto.ResponseSuccess
 import spring.minibanksystem.dto.request.TransactionRequest
+import spring.minibanksystem.dto.request.TransactionSearchRequest
 import spring.minibanksystem.dto.response.TransactionResponse
 import spring.minibanksystem.service.interfaceService.TransactionService
 
@@ -51,6 +52,15 @@ class TransactionController(
         @RequestAttribute userId: Long
     ) : ResponseEntity<ResponseSuccess<TransactionResponse>> {
         val result = transactionService.getTransaction(userId,accountNumber, id)
+        return ResponseEntity.ok(result)
+    }
+
+    @GetMapping("/search")
+    fun searchTransactionHistory(
+        @RequestAttribute("userId") userId: Long?,
+        @ModelAttribute request: TransactionSearchRequest
+    ): ResponseEntity<ResponseSuccess<List<TransactionResponse>>> {
+        val result = transactionService.searchTransactionHistory(userId,request)
         return ResponseEntity.ok(result)
     }
 

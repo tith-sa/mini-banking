@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity
 import spring.minibanksystem.dto.ResponseError
 import spring.minibanksystem.dto.ResponseSuccess
 
-fun <T> T.toSuccess(
+fun <T> T.buildSuccess(
     status: HttpStatus = HttpStatus.OK,
     message: String? = null
 ): ResponseSuccess<T> {
