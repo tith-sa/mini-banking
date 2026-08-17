@@ -3,24 +3,14 @@ package spring.minibanksystem.util
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import spring.minibanksystem.dto.ResponseError
-import spring.minibanksystem.dto.ResponseSuccess
-
-fun <T> T.buildSuccess(
-    status: HttpStatus = HttpStatus.OK,
-    message: String? = null
-): ResponseSuccess<T> {
-    return ResponseSuccess(
-        status,
-        this,
-        message
-    )
-}
 
 fun HttpStatus.buildError(
     message: String?,
+    data: Any? = null
 ): ResponseEntity<ResponseError> {
     val body = ResponseError(
-        this,
+        status = this,
+        data = data,
         message = message
     )
     return ResponseEntity

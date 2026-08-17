@@ -1,13 +1,11 @@
 package spring.minibanksystem.util
 
-import spring.minibanksystem.handleException.HandleException
+import spring.minibanksystem.handleException.BadRequestException
 import spring.minibanksystem.model.enum.CurrencyType
 import java.math.BigDecimal
 
-fun BigDecimal.validationAmountLimited(fromCurrency: CurrencyType?){
-    if (fromCurrency == null) {
-        throw HandleException.BadRequest("Currency is required.")
-    }
+fun BigDecimal.validationAmountLimited(fromCurrency: CurrencyType){
+
     val maxAmount = when (fromCurrency) {
         CurrencyType.USD -> BigDecimal("10000")
         CurrencyType.KHR -> BigDecimal("40000000")
@@ -19,9 +17,9 @@ fun BigDecimal.validationAmountLimited(fromCurrency: CurrencyType?){
     }
 
     if (this >= maxAmount) {
-        throw HandleException.BadRequest("Transfer amount exceeds the maximum limit.")
+        throw BadRequestException("Transfer amount exceeds the maximum limit.")
     }
     if (this <= minAmount) {
-        throw HandleException.BadRequest("Transfer amount exceeds the minimum limit.")
+        throw BadRequestException("Transfer amount exceeds the minimum limit.")
     }
 }

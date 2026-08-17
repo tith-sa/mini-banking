@@ -29,5 +29,6 @@ class Account(
     var balance: BigDecimal? = null,
 
     @Column( "ownerId")
-    var ownerId: Long? = null,
-    ) : BaseModel()
+    var ownerId: Long? = null
+
+) : BaseModel()

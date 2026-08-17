@@ -10,13 +10,12 @@ import spring.minibanksystem.dto.request.LoginRequest
 import spring.minibanksystem.dto.request.RegisterRequest
 import spring.minibanksystem.dto.response.LoginResponse
 import spring.minibanksystem.dto.response.RegisterResponse
-import spring.minibanksystem.handleException.HandleException
+import spring.minibanksystem.handleException.BadRequestException
 import spring.minibanksystem.model.User
 import spring.minibanksystem.model.enum.CurrencyType
 import spring.minibanksystem.repository.UserRepository
 import spring.minibanksystem.service.interfaceService.AccountService
 import spring.minibanksystem.service.interfaceService.AuthService
-import spring.minibanksystem.util.buildSuccess
 
 @Service
 class AuthServiceImpl(
@@ -30,10 +29,10 @@ class AuthServiceImpl(
     override fun register(request : RegisterRequest) : ResponseSuccess<RegisterResponse>{
         val (username, email,password) = request // object destructuring
         if (userRepo.existsByUsername(username)) {
-            throw HandleException.BadRequest("Username is already registered")
+            throw BadRequestException("Username is already registered")
         }
         if (userRepo.existsByEmail(email)) {
-            throw HandleException.BadRequest("Email is already registered")
+            throw BadRequestException("Email is already registered")
         }
         val hashPassword = passwordEncoder.encode(password)
         val user = User(
@@ -43,24 +42,28 @@ class AuthServiceImpl(
         )
         userRepo.save(user)
 
-        accountService.createAccount(user.id, AccountRequest(CurrencyType.KHR))
-        accountService.createAccount(user.id, AccountRequest(CurrencyType.USD))
+        user.id?.let { accountService.createAccount( it, AccountRequest(CurrencyType.KHR)) }
+        user.id?.let { accountService.createAccount(it, AccountRequest(CurrencyType.USD)) }
 
         val response = RegisterResponse(
             user.id,
             user.username,
             user.email,
         )
-        return response.buildSuccess(HttpStatus.CREATED, "User registered successfully.")
+        return ResponseSuccess(
+            status = HttpStatus.CREATED,
+            data = response,
+            message = "User registered"
+        )
     }
 
     override fun login(request: LoginRequest): ResponseSuccess<LoginResponse> {
         val ( email, password) = request
 
         val user = userRepo.findByEmail(email)
-            ?: throw HandleException.BadRequest("Email is not registered")
+            ?: throw BadRequestException("Email is not registered")
         if (!passwordEncoder.matches(password, user.password)){
-            throw HandleException.BadRequest("Password is incorrect")
+            throw BadRequestException("Password is incorrect")
         }
 
         val token = jwtUtil.generateToken(user.id)
@@ -68,6 +71,9 @@ class AuthServiceImpl(
         val response = LoginResponse(
             token
         )
-        return response.buildSuccess(message = "Login successful")
+        return ResponseSuccess(
+            data = response,
+            message = "User logged in"
+        )
     }
 }

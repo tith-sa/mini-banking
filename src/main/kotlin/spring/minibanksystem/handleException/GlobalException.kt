@@ -32,23 +32,27 @@ class GlobalException {
             .body(response)
     }
 
-    @ExceptionHandler(HandleException.BadRequest::class)
-    fun handleBadRequest(ex: HandleException.BadRequest): ResponseEntity<ResponseError> {
+    //class reference used by Spring's @ExceptionHandler to specify the exception type to handle.
+    @ExceptionHandler(BadRequestException::class)
+    fun handleBadRequest(ex: BadRequestException): ResponseEntity<ResponseError> {
         return HttpStatus.BAD_REQUEST.buildError(ex.message)
     }
 
-    @ExceptionHandler(HandleException.ResourceNotFound::class)
-    fun handleResourceNotFound(ex: HandleException.ResourceNotFound): ResponseEntity<ResponseError> {
+    @ExceptionHandler(ResourceNotFoundException::class)
+    fun handleResourceNotFound(ex: ResourceNotFoundException): ResponseEntity<ResponseError> {
         return HttpStatus.NOT_FOUND.buildError(ex.message)
     }
 
-    @ExceptionHandler(HandleException.Authorization::class)
-    fun handleAuthorizationError(ex: HandleException.Authorization): ResponseEntity<ResponseError> {
+    // authorization while user doesn't have permission to do something
+    @ExceptionHandler(AuthorizationException::class)
+    fun handleAuthorizationError(ex: AuthorizationException): ResponseEntity<ResponseError> {
         return HttpStatus.FORBIDDEN.buildError(ex.message)
     }
 
-    @ExceptionHandler(HandleException.Authentication::class)
-    fun handleAuthenticationError(ex: HandleException.Authentication): ResponseEntity<ResponseError> {
+
+    // authentication while user doesn't log in
+    @ExceptionHandler(AuthenticationException::class)
+    fun handleAuthenticationError(ex: AuthenticationException): ResponseEntity<ResponseError> {
         return HttpStatus.UNAUTHORIZED.buildError(ex.message)
     }
 

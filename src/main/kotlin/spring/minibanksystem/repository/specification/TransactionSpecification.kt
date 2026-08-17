@@ -2,15 +2,23 @@ package spring.minibanksystem.repository.specification
 
 import org.springframework.data.jpa.domain.Specification
 import spring.minibanksystem.dto.request.TransactionSearchRequest
+import spring.minibanksystem.model.Account
 import spring.minibanksystem.model.Transaction
 import spring.minibanksystem.model.enum.TransactionStatus
 import spring.minibanksystem.model.enum.TransactionType
 import java.time.LocalDateTime
+// static class store in memory and no need to instance it
+object TransactionSpecification {
 
-class TransactionSpecification {
-    companion object {
         fun findByIdAndAccounts(id: Long, account: String?): Specification<Transaction> {
-            return Specification { root,query, cb ->
+
+            // root  -> represents the entity being queried (FROM transaction t).
+            //          Used to access columns: root.get<BigDecimal>("amount") -> t.amount
+            // query -> the CriteriaQuery itself. Rarely touched for simple predicates;
+            //          used for query.distinct(true), subqueries, or custom ordering
+            // cb    -> CriteriaBuilder, the factory for conditions.
+            //          cb.equal(...), cb.between(...), cb.greaterThanOrEqualTo(...) -> your WHERE clause pieces
+            return Specification { root,_, cb ->
 
                 // 1. Column equals filter: t.id = :id
                 val idPredicate = cb.equal(root.get<Long>("id"),id)
@@ -26,19 +34,30 @@ class TransactionSpecification {
         }
 
         // Searching
+        fun byOwner(ownerId: Long): Specification<Transaction> {
+            return Specification { root, query, cb ->
+                val subquery = query.subquery(String::class.java)
+                val account = subquery.from(Account::class.java)
+                subquery.select(account.get("accountNumber"))
+                    .where(cb.equal(account.get<Long>("ownerId"), ownerId))
+
+                cb.or(
+                    root.get<String>("fromAccount").`in`(subquery),
+                    root.get<String>("toAccount").`in`(subquery)
+                )
+            }
+        }
         fun accountNumber(accountNumber: String?): Specification<Transaction>? {
             // If account number is not provided, skip this filter
-            if (accountNumber.isNullOrBlank()) return null
+            if (accountNumber.isNullOrEmpty()) return null
 
             return Specification { root, _, cb ->
 
                 // Check if the account is the sender (fromAccount)
-                val fromAccountPredicate =
-                    cb.equal(root.get<String>("fromAccount"), accountNumber)
+                val fromAccountPredicate = cb.equal(root.get<String>("fromAccount"), accountNumber)
 
                 // Check if the account is the receiver (toAccount)
-                val toAccountPredicate =
-                    cb.equal(root.get<String>("toAccount"), accountNumber)
+                val toAccountPredicate = cb.equal(root.get<String>("toAccount"), accountNumber)
 
                 // Match transactions where the account is either
                 // the sender OR the receiver
@@ -127,6 +146,7 @@ class TransactionSpecification {
         }
 
         fun buildSpecification(
+            userId: Long,
             request: TransactionSearchRequest
         ): Specification<Transaction> {
 
@@ -136,6 +156,7 @@ class TransactionSpecification {
             // listOfNotNull() removes filters that returned null.
             return Specification.allOf(
                 listOfNotNull(
+                    byOwner(userId),
                     accountNumber(request.accountNumber),
                     statuses(request.statuses),
                     types(request.types),
@@ -144,5 +165,4 @@ class TransactionSpecification {
                 )
             )
         }
-    }
 }

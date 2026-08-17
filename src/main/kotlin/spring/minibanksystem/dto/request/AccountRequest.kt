@@ -7,8 +7,8 @@ import java.math.BigDecimal
 
 data class AccountRequest(
     @field:NotBlank
-    val currency: CurrencyType?,
+    val currency: CurrencyType,
 
     @Positive
-    val balance: BigDecimal? = BigDecimal.ZERO.setScale(2),
+    val balance: BigDecimal = BigDecimal.ZERO.setScale(2),
 )

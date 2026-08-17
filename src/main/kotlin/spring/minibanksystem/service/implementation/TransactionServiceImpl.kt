@@ -1,15 +1,15 @@
 package spring.minibanksystem.service.implementation
 
-import jakarta.transaction.Transactional
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
-import spring.minibanksystem.dto.ResponsePageMeta
 import spring.minibanksystem.dto.ResponsePagination
 import spring.minibanksystem.dto.ResponseSuccess
 import spring.minibanksystem.dto.request.TransactionRequest
 import spring.minibanksystem.dto.request.TransactionSearchRequest
 import spring.minibanksystem.dto.response.TransactionResponse
-import spring.minibanksystem.handleException.HandleException
+import spring.minibanksystem.handleException.BadRequestException
+import spring.minibanksystem.handleException.ResourceNotFoundException
 import spring.minibanksystem.model.Transaction
 import spring.minibanksystem.model.enum.TransactionStatus
 import spring.minibanksystem.model.enum.TransactionType
@@ -19,10 +19,7 @@ import spring.minibanksystem.repository.specification.TransactionSpecification
 import spring.minibanksystem.service.interfaceService.TransactionService
 import spring.minibanksystem.service.AuthorizationService
 import spring.minibanksystem.service.TransactionStatusService
-import spring.minibanksystem.util.buildSuccess
-import spring.minibanksystem.util.exchangeAmount
 import spring.minibanksystem.util.validationAmountLimited
-import java.math.BigDecimal
 
 @Service
 class TransactionServiceImpl(
@@ -32,46 +29,41 @@ class TransactionServiceImpl(
     private val transactionStatusService: TransactionStatusService,
 ) : TransactionService {
 
-    @Transactional
     override fun transfer(
-        userId: Long?,
+        userId: Long,
         request: TransactionRequest
     ): ResponseSuccess<TransactionResponse> {
 
+        //destructuring declaration
         val (fromAccount, toAccount, amount) = request
 
         // 1. Find sender
         val senderAccount = accountRepo.findByAccountNumber(fromAccount)
-            ?: throw HandleException.ResourceNotFound("Sender account not found")
+            ?: throw ResourceNotFoundException("Sender account not found")
 
         // 2. Check ownership
         authorizationService.validateOwner(senderAccount, userId)
 
         // 3. Validate amount
-        if (amount == null || amount <= BigDecimal.ZERO) {
-            throw HandleException.BadRequest("Amount must be greater than 0")
-        }
-
         if (amount > senderAccount.balance) {
-            throw HandleException.BadRequest("Don't have enough balance")
+            throw BadRequestException("Don't have enough balance")
         }
-
-        amount.validationAmountLimited(senderAccount.currency)
 
         // 4. Find receiver
         val receiverAccount = accountRepo.findByAccountNumber(toAccount)
-            ?: throw HandleException.ResourceNotFound("Receiver account not found")
+            ?: throw ResourceNotFoundException("Receiver account not found")
 
         // 5. Cannot transfer to yourself
         if (senderAccount.accountNumber == receiverAccount.accountNumber) {
-            throw HandleException.BadRequest("Cannot transfer to this account")
+            throw BadRequestException("Cannot transfer to this account")
         }
 
-        // 6. Convert currency
-        val convertedAmount = amount.exchangeAmount(
-            senderAccount.currency,
-            receiverAccount.currency
-        )
+
+        // validate limit min/max amount
+        val currency = senderAccount.currency
+            ?: throw BadRequestException("Account currency is required")
+        amount.validationAmountLimited(currency)
+
 
         // 7. Create transaction
         val transfer = Transaction(
@@ -85,30 +77,23 @@ class TransactionServiceImpl(
 
         // 8. FIRST TRANSACTION
         // PENDING is committed immediately
-        val savedTransfer = transactionStatusService.savePending(transfer)
+        val savedTransfer = transactionStatusService.firstSave(transfer)
 
         try {
-            // 9. Update sender
-            senderAccount.balance =
-                senderAccount.balance?.minus(amount)
-
-            // 10. Update receiver
-            receiverAccount.balance =
-                receiverAccount.balance?.plus(convertedAmount)
-
-            // 11. Save accounts
-            accountRepo.save(senderAccount)
-            accountRepo.save(receiverAccount)
-
             // 12. SECOND TRANSACTION
             // PENDING → SUCCESS
-            transactionStatusService.saveSuccess(savedTransfer.id)
+            savedTransfer.id?.let { transactionStatusService.secondSave(
+                    it,
+                    senderAccount,
+                    receiverAccount
+                )
+            }
 
         } catch (e: Exception) {
 
             // 13. Separate transaction
             // PENDING → FAILED
-            transactionStatusService.saveFailed(savedTransfer.id)
+            savedTransfer.id?.let { transactionStatusService.thirdSave(it) }
 
             throw e
         }
@@ -124,27 +109,56 @@ class TransactionServiceImpl(
             savedTransfer.createdAt
         )
 
-        return response.buildSuccess(message = "Transfer successfully")
+        return ResponseSuccess(
+            data = response,
+            message = "Transfer successfully"
+        )
     }
 
-    override fun historyTransaction(userId: Long?,accountNumber: String?, page: Int, size: Int): ResponseSuccess<ResponsePagination <TransactionResponse>> {
+
+    // Get transaction history for a specific account with pagination
+    override fun historyTransaction(
+        userId: Long,
+        accountNumber: String,
+        page: Int,
+        size: Int
+    ): ResponseSuccess<ResponsePagination <TransactionResponse>> {
+        // Find the account using the provided account number.
+        // If the account does not exist, throw a ResourceNotFound exception.
        val account = accountRepo.findByAccountNumber(accountNumber)
-            ?: throw HandleException.ResourceNotFound("Account not found")
+            ?: throw ResourceNotFoundException("Account not found")
+
+        // Verify that the authenticated user owns the requested account.
         authorizationService.validateOwner(account, userId)
+
+        // Validate that the page number starts from 1.
         if (page < 1) {
-            throw HandleException.BadRequest("Page must be 1 or greater")
+            throw BadRequestException("Page must be 1 or greater")
         }
+
+        // Validate that the size page minimum 1.
+        if (size < 1) {
+            throw BadRequestException("Size must be 1 or greater")
+        }
+
+        // Create a Pageable object.
+        // PageRequest uses zero-based indexing, so subtract 1 from the page number.
         val pageable = PageRequest.of(
             page - 1,
-            size
+            size,
+            Sort.by(Sort.Direction.DESC, "createdAt")
         )
 
+        // Find transactions where the account is either
+        // the sender (fromAccount) or receiver (toAccount).
+        // The pageable object limits the results and provides pagination metadata.
         val history = transactionRepo.findByFromAccountOrToAccount(
             account.accountNumber,
             account.accountNumber,
             pageable
         )
 
+        // Convert Transaction entities into TransactionResponse DTOs.
         val transaction = history.content.map {
             TransactionResponse(
                 it.id,
@@ -158,8 +172,9 @@ class TransactionServiceImpl(
             )
         }
 
+        // Build pagination metadata using information from the Page object.
         val pagination = ResponsePagination(
-            ResponsePageMeta(
+            ResponsePagination.ResponsePageMeta(
                 history.number + 1,
                 history.size,
                 history.totalElements,
@@ -168,34 +183,34 @@ class TransactionServiceImpl(
             transaction,
         )
 
-        return pagination.buildSuccess(message = "Display transaction history")
+        return ResponseSuccess(
+            data = pagination,
+            message = "Display transaction history"
+        )
 
     }
 
     override fun getTransaction(
-        userId: Long?,
-        accountNumber: String?,
-        id: Long?
+        userId: Long,
+        accountNumber: String,
+        id: Long
     ): ResponseSuccess<TransactionResponse> {
-        if (userId == null) {
-            throw HandleException.BadRequest("User ID is required")
-        }
-        if (id == null) {
-            throw HandleException.BadRequest("User ID is required")
-        }
-        if (accountNumber == null) {
-            throw HandleException.BadRequest("Account number is required")
-        }
+
+        // find account number
         val account = accountRepo.findByAccountNumber(accountNumber)
-            ?: throw HandleException.ResourceNotFound("Account not found")
+            ?: throw ResourceNotFoundException("Account not found")
+
+        // validate owner
         authorizationService.validateOwner(account, userId)
 
+        // Build the JPA Specification find transaction by id and account number
         val spec = TransactionSpecification.findByIdAndAccounts(id,account.accountNumber)
         val transaction = transactionRepo.findOne(spec)
             .orElseThrow {
-                HandleException.ResourceNotFound("Transaction not found")
+                ResourceNotFoundException("Transaction not found")
             }
 
+        // Convert Transaction entities into TransactionResponse DTOs
         val response = TransactionResponse(
            transaction.id,
             transaction.fromAccount,
@@ -207,16 +222,45 @@ class TransactionServiceImpl(
             transaction.createdAt
         )
 
-        return response.buildSuccess(message = "Get transaction Successful")
+        return ResponseSuccess(
+            data = response,
+            message = "Transaction successfully"
+        )
     }
 
+
+    // search transaction function
     override fun searchTransactionHistory(
-        userId: Long?,
-        request: TransactionSearchRequest
-    ): ResponseSuccess<List<TransactionResponse>> {
-        val spec = TransactionSpecification.buildSpecification(request)
-        val transactions =  transactionRepo.findAll(spec)
-        val response = transactions.map {
+        userId: Long,
+        request: TransactionSearchRequest,
+        page: Int,
+        size: Int
+    ): ResponseSuccess<ResponsePagination<TransactionResponse>> {
+
+        if (page < 1) {
+            throw BadRequestException("Page must be 1 or greater")
+        }
+        if (size < 1) {
+            throw BadRequestException("Size must be 1 or greater")
+        }
+        val pageable = PageRequest.of(
+            page - 1,
+            size,
+            Sort.by(Sort.Direction.DESC, "createdAt")
+        )
+
+        // Build the JPA Specification based on the search filters
+        // provided in the request, such as account number, status, transaction type, and date range.
+        val spec = TransactionSpecification.buildSpecification(userId, request)
+
+        // Execute the query using the generated Specification
+        // and retrieve all transactions that match the filters.
+        val transactions = transactionRepo.findAll(spec, pageable)
+
+        // Convert each Transaction entity into a TransactionResponse DTO
+        // before returning the data to the client.
+        // Convert Transaction entities into TransactionResponse DTOs and map data.
+        val transactionResponses = transactions.content.map {
             TransactionResponse(
                 it.id,
                 it.fromAccount,
@@ -228,6 +272,22 @@ class TransactionServiceImpl(
                 it.createdAt
             )
         }
-        return response.buildSuccess(message = "Search transaction history")
+
+        // Use pagination information from Page<Transaction>
+        val pagination = ResponsePagination(
+            ResponsePagination.ResponsePageMeta(
+                transactions.number + 1,
+                transactions.size,
+                transactions.totalElements,
+                transactions.totalPages,
+            ),
+            transactionResponses,
+        )
+
+        // Return the transaction responses with a success message.
+        return ResponseSuccess(
+            data = pagination,
+            message = "Search Transaction history"
+        )
     }
 }
