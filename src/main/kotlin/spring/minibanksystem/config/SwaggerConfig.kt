@@ -31,7 +31,7 @@ class SwaggerConfig : WebMvcConfigurer {
                     SecurityScheme()
                         .name(securitySchemeName)
                         .type(SecurityScheme.Type.HTTP) // Set authorization type to HTTP
-                        .scheme("bearer")               // Specify 'bearer' scheme for JWT
+                        .scheme("bearer")               // Specify "bearer" scheme for JWT
                         .bearerFormat("JWT")            // Clarify token format as JWT for documentation
                 )
             )

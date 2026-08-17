@@ -34,19 +34,50 @@ object TransactionSpecification {
         }
 
         // Searching
+        //
+        //SELECT *
+        //FROM transactions t
+        //WHERE t.from_account IN (
+        //    SELECT a.account_number
+        //    FROM account a
+        //    WHERE a.owner_id = 10
+        //)
+        //OR t.to_account IN (
+        //    SELECT a.account_number
+        //    FROM account a
+        //    WHERE a.owner_id = 10
+        //);
         fun byOwner(ownerId: Long): Specification<Transaction> {
             return Specification { root, query, cb ->
-                val subquery = query.subquery(String::class.java)
-                val account = subquery.from(Account::class.java)
-                subquery.select(account.get("accountNumber"))
-                    .where(cb.equal(account.get<Long>("ownerId"), ownerId))
 
+                // Create a subquery that returns account numbers.
+                // The subquery will find all accounts belonging to the given owner.
+                val subquery = query.subquery(String::class.java)
+
+                // Define Account as the entity that the subquery will search.
+                val account = subquery.from(Account::class.java)
+
+                // Select the accountNumber from Account
+                // and only include accounts whose ownerId matches the given ownerId.
+                subquery.select(account.get("accountNumber"))
+                    .where(
+                        cb.equal(
+                            account.get<Long>("ownerId"),
+                            ownerId
+                        )
+                    )
+
+                // Find transactions where:
+                // 1. fromAccount is one of the owner's account numbers
+                // OR
+                // 2. toAccount is one of the owner's account numbers
                 cb.or(
                     root.get<String>("fromAccount").`in`(subquery),
                     root.get<String>("toAccount").`in`(subquery)
                 )
             }
         }
+
         fun accountNumber(accountNumber: String?): Specification<Transaction>? {
             // If account number is not provided, skip this filter
             if (accountNumber.isNullOrEmpty()) return null
